@@ -1,5 +1,7 @@
 import streamlit as st
 import pandas as pd
+from pathlib import Path
+import base64
 
 # ------------------------------------------------------------------------------
 # Page config
@@ -7,11 +9,43 @@ import pandas as pd
 st.set_page_config(page_title="Dubai Investments", layout="wide")
 
 # ------------------------------------------------------------------------------
-# Load data (light, preprocessed CSV)
+# Background image (set your file name here)
+# ------------------------------------------------------------------------------
+BG_IMAGE = "dubai_bg.jpg"  # <- change to your own image file name
+
+def set_background(image_path: str):
+    img_file = Path(image_path)
+    if not img_file.exists():
+        return  # fail silently if image missing
+    b64 = base64.b64encode(img_file.read_bytes()).decode()
+    css = f"""
+    <style>
+    .stApp {{
+        background-image: url("data:image/jpg;base64,{b64}");
+        background-size: cover;
+        background-attachment: fixed;
+        background-repeat: no-repeat;
+    }}
+    /* add subtle dark overlay for readability */
+    .stApp::before {{
+        content: "";
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.60);
+        pointer-events: none;
+        z-index: -1;
+    }}
+    </style>
+    """
+    st.markdown(css, unsafe_allow_html=True)
+
+set_background(BG_IMAGE)
+
+# ------------------------------------------------------------------------------
+# Load data
 # ------------------------------------------------------------------------------
 @st.cache_data
 def load_data():
-    # IMPORTANT: this CSV must be the 6909 x 13 light file
     df = pd.read_csv("bayut_selling_properties.csv")
     df["listingdate"] = pd.to_datetime(df["listingdate"], errors="coerce")
     return df
@@ -19,12 +53,19 @@ def load_data():
 df = load_data()
 
 # ------------------------------------------------------------------------------
-# App title
+# Title and short subtitle
 # ------------------------------------------------------------------------------
-st.title("Dubai Property Investment Dashboard")
+st.markdown(
+    "<h1 style='color:white;'>Dubai Property Investment Dashboard</h1>",
+    unsafe_allow_html=True,
+)
+st.markdown(
+    "<p style='color:#cccccc;'>Filter Dubai listings and see key investor metrics at a glance.</p>",
+    unsafe_allow_html=True,
+)
 
 # ------------------------------------------------------------------------------
-# Sidebar filters
+# Sidebar – keep it simple
 # ------------------------------------------------------------------------------
 st.sidebar.header("Filters")
 
@@ -42,11 +83,12 @@ price_range = st.sidebar.slider(
 communities = ["All"] + sorted(df["community"].dropna().unique().tolist())
 community_choice = st.sidebar.selectbox("Community", communities)
 
-property_types = ["All"] + sorted(df["propertytype"].dropna().unique().tolist())
-ptype_choice = st.sidebar.selectbox("Property type", property_types)
+with st.sidebar.expander("Advanced filters", expanded=False):
+    property_types = ["All"] + sorted(df["propertytype"].dropna().unique().tolist())
+    ptype_choice = st.selectbox("Property type", property_types)
 
-furnishing_options = ["All"] + sorted(df["furnishing"].dropna().unique().tolist())
-furnishing_choice = st.sidebar.selectbox("Furnishing", furnishing_options)
+    furnishing_options = ["All"] + sorted(df["furnishing"].dropna().unique().tolist())
+    furnishing_choice = st.selectbox("Furnishing", furnishing_options)
 
 # ------------------------------------------------------------------------------
 # Apply filters
@@ -65,52 +107,64 @@ if furnishing_choice != "All":
 fdf = df[mask]
 
 # ------------------------------------------------------------------------------
-# Summary metrics
+# Top KPIs (clean, centered)
 # ------------------------------------------------------------------------------
-st.subheader("Summary")
+st.markdown("### Summary")
 
-col1, col2, col3 = st.columns(3)
-with col1:
-    st.metric("Listings", int(len(fdf)))
-with col2:
-    st.metric(
-        "Median price (AED)",
-        int(fdf["priceaed"].median()) if len(fdf) else 0,
-    )
-with col3:
-    st.metric(
-        "Median price / sqft (AED)",
-        float(round(fdf["pricepersqft"].median(), 1)) if len(fdf) else 0.0,
-    )
+kpi_cols = st.columns(3)
 
-# ------------------------------------------------------------------------------
-# Sample table (limit rows for speed)
-# ------------------------------------------------------------------------------
-st.subheader("Sample listings (first 200 rows)")
+listings_count = int(len(fdf))
+median_price = int(fdf["priceaed"].median()) if listings_count else 0
+median_pps = float(round(fdf["pricepersqft"].median(), 1)) if listings_count else 0.0
 
-sample_cols = [
-    "priceaed", "pricepersqft", "sizesqft", "bedrooms",
-    "bathrooms", "community", "propertytype",
-    "furnishing", "listingdate",
-]
-
-if len(fdf):
-    st.dataframe(
-        fdf.sort_values("priceaed").head(200)[sample_cols],
-        use_container_width=True,
-    )
-else:
-    st.info("No listings for current filter selection.")
+with kpi_cols[0]:
+    st.metric("Listings", f"{listings_count:,}")
+with kpi_cols[1]:
+    st.metric("Median price (AED)", f"{median_price:,}")
+with kpi_cols[2]:
+    st.metric("Median price / sqft (AED)", f"{median_pps:,.1f}")
 
 # ------------------------------------------------------------------------------
-# Simple chart
+# Main layout: chart + small table
 # ------------------------------------------------------------------------------
-st.subheader("Price per sqft (trimmed at 99th percentile)")
+left, right = st.columns([1.1, 1])
 
-if len(fdf):
-    trimmed = fdf["pricepersqft"].clip(
-        upper=fdf["pricepersqft"].quantile(0.99)
-    )
-    st.line_chart(trimmed.reset_index(drop=True))
-else:
-    st.info("No data to plot for current filters.")
+# Chart: simple histogram of price per sqft
+with left:
+    st.markdown("### Price per sqft (trimmed at 99th percentile)")
+    if listings_count:
+        trimmed = fdf["pricepersqft"].clip(
+            upper=fdf["pricepersqft"].quantile(0.99)
+        )
+        st.bar_chart(trimmed.reset_index(drop=True))
+    else:
+        st.info("No data for current filter selection.")
+
+# Table: small, renamed columns
+with right:
+    st.markdown("### Sample listings (first 50 rows)")
+    sample_cols = [
+        "priceaed", "pricepersqft", "sizesqft",
+        "bedrooms", "bathrooms", "community",
+        "propertytype", "furnishing", "listingdate",
+    ]
+
+    if listings_count:
+        display = (
+            fdf.sort_values("priceaed")
+               .head(50)[sample_cols]
+               .rename(columns={
+                   "priceaed": "Price (AED)",
+                   "pricepersqft": "Price / sqft (AED)",
+                   "sizesqft": "Size (sqft)",
+                   "bedrooms": "Beds",
+                   "bathrooms": "Baths",
+                   "community": "Community",
+                   "propertytype": "Type",
+                   "furnishing": "Furnishing",
+                   "listingdate": "Listing date",
+               })
+        )
+        st.dataframe(display, use_container_width=True, height=450)
+    else:
+        st.info("No listings to show.")
