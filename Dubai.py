@@ -9,9 +9,9 @@ import base64
 st.set_page_config(page_title="Dubai Investments", layout="wide")
 
 # ------------------------------------------------------------------------------
-# Background image (set your file name here)
+# Background image 
 # ------------------------------------------------------------------------------
-BG_IMAGE = "dubai_bg.jpg"  # <- change to your own image file name
+BG_IMAGE = "dubai_bg.jpg" 
 
 def set_background(image_path: str):
     img_file = Path(image_path)
@@ -168,3 +168,4 @@ with right:
         st.dataframe(display, use_container_width=True, height=450)
     else:
         st.info("No listings to show.")
+
