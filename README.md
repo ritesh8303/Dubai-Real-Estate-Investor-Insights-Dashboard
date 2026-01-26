@@ -1,33 +1,39 @@
-🏠 Dubai Real Estate Investor Insights
+# Dubai Apartment Investment Explorer
 
-Interactive Streamlit dashboard for Dubai property analytics (Kaggle/PropertyFinder data). Filter ROI hotspots, price/sqft trends by location (Downtown avg AED 2,500/sqft), bedroom/type. Key: Marina 12% ROI potential.
+This repository contains an end‑to‑end data analysis and visualization project exploring the Dubai rental apartment market from an **investor’s perspective**.  
+Using the public *“Dubai Real Estate Goldmine, UAE Rental Market Data”* dataset, the project identifies communities where apartments provide **relatively low entry cost** and **strong rental income per square meter**.
 
-Features
+---
 
-Filters: Location, price range, bedrooms, property type.
+## Project Objectives
 
-Metrics: Avg price/sqft, ROI calc, market trends.
+- Clean and prepare a real‑world real estate dataset for analysis.
+- Explore Dubai apartment rentals using **Pandas** and **exploratory data analysis (EDA)**.
+- Engineer investor‑focused metrics such as:
+  - Annual rent  
+  - Size in square meters  
+  - Rent per square meter per year
+- Compare **communities and bedroom types** (Studio, 1BR, 2BR, 3+) to find:
+  - Areas with **lower rent per sqm** (more space for less money)
+  - Areas with **higher rent per sqm** (premium locations)
+- Build visualizations with **Matplotlib/Seaborn** and **Plotly**.
+- Prepare data for an interactive **Streamlit dashboard** for property‑investment exploration.
 
-Charts: Maps (Folium), histograms (Plotly).
+---
 
-Insights: Best areas for 1-3 bed investments.
+## Repository Structure
 
-Quick Start
-git clone https://github.com/ritesh8303/dubai-real-estate
-cd dubai-real-estate
-pip install -r requirements.txt
-streamlit run app.py
-
-Dataset: rental_prices.csv (location, size, bedrooms, bathrooms, furnished, price, ROI).
-
-Market Summary
-
-Area	Avg Price/sqft (AED)	Avg ROI
-Downtown	2,500	8%
-Marina	2,200	12%
-JLT	1,800	10%
-Palm Jumeirah	3,000	9%
-Tech: Streamlit, Pandas, Plotly, Folium, AWS deployable.
-
-Ideal for real estate analytics portfolio. Contributions welcome!
-​
+```text
+.
+├── data/
+│   ├── dubai_raw.csv                 # Original dataset (not committed if large)
+│   ├── dubai_clean_listings.csv      # Cleaned listing‑level data
+│   └── dubai_agg_communities.csv     # Aggregated metrics by community & bedroom type
+├── notebooks/
+│   └── dubai_investor_eda.ipynb      # Main analysis notebook (Pandas + EDA + plots)
+├── app/
+│   └── app.py                        # Streamlit dashboard (optional / WIP)
+├── images/
+│   └── *.png                         # Exported charts / screenshots for README
+├── README.md
+└── requirements.txt
